@@ -34,12 +34,6 @@ type TaskManagerData struct {
 	Tasks map[int]Task
 }
 
-//// App struct
-//type App struct {
-//	ctx context.Context
-//}
-
-// NewTaskManager NewApp creates a new App application struct
 func NewTaskManager() *TaskManager {
 	tm := &TaskManager{
 		tasks: make(map[int]Task),
@@ -54,8 +48,6 @@ func NewTaskManager() *TaskManager {
 
 }
 
-// startup is called when the app starts. The context is saved
-// ,so we can call the runtime methods
 func (tm *TaskManager) startup(ctx context.Context) {
 	tm.ctx = ctx
 }
@@ -76,8 +68,6 @@ func (tm *TaskManager) GetAllTasks() []Task {
 }
 
 func (tm *TaskManager) AddTask(title string, deadline string, priority string) bool {
-	fmt.Println(priority)
-	fmt.Printf("%T\n", priority)
 	priorityInt := 1
 	switch priority {
 	case "low":
@@ -99,7 +89,7 @@ func (tm *TaskManager) AddTask(title string, deadline string, priority string) b
 	tm.tasks[tm.Next] = Task{ID: tm.Next, Title: title, CreatedAt: time.Now(), Deadline: parsedTime, Priority: priorityInt}
 	fmt.Println(tm.Next)
 	tm.Next++
-	_ = tm.saveTasks() // Save tasks after adding a new one
+	_ = tm.saveTasks()
 	fmt.Println(tm.GetAllTasks())
 
 	return true
@@ -135,22 +125,18 @@ func (tm *TaskManager) ToggleTaskCompletion(taskID int) bool {
 }
 
 func (tm *TaskManager) saveTasks() error {
-	fmt.Println("Saving tasks.json")
 
-	// Create a structure that includes both `Next` and `tasks`
 	data := TaskManagerData{
 		Next:  tm.Next,
 		Tasks: tm.tasks,
 	}
 
-	// Marshal the data structure to JSON
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("Error marshalling tasks.json")
 		return err
 	}
 
-	// Write the JSON data to a file
 	return os.WriteFile(taskFile, jsonData, 0644)
 }
 
@@ -159,19 +145,16 @@ func (tm *TaskManager) loadTasks() error {
 		return nil
 	}
 
-	// Read the JSON data from the file
 	data, err := os.ReadFile(taskFile)
 	if err != nil {
 		return err
 	}
 
-	// Unmarshal the JSON data into a TaskManagerData structure
 	var loadedData TaskManagerData
 	if err := json.Unmarshal(data, &loadedData); err != nil {
 		return err
 	}
 
-	// Update the TaskManager fields with the loaded data
 	tm.Next = loadedData.Next
 	tm.tasks = loadedData.Tasks
 	return nil

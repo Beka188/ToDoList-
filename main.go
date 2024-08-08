@@ -12,10 +12,8 @@ import (
 var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
 	app := NewTaskManager()
 
-	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "todoapp",
 		Width:  1024,
