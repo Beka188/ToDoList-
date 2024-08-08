@@ -198,7 +198,7 @@
                     <div class="task-description">{task.description}</div>
                 </div>
                 <div class="priority">
-                    {#if task.priority === 1}
+                    {#if task.priority === 0}
                         <i class="fas fa-arrow-down text-gray-400"></i>
                     {:else if task.priority === 2}
                         <i class="fas fa-arrow-up text-green-500"></i>
