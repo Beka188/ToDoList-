@@ -18,7 +18,7 @@
     let deadline = ''
 
 
-    let filter = 'active'; // 'all', 'active', or 'completed'
+    let filter = 'all'; // 'all', 'active', or 'completed'
 
     onMount(() => {
         const today = new Date();
@@ -80,15 +80,36 @@
 
     async function confirmDelete() {
         if (taskToDelete) {
-            await DeleteTask(taskToDelete.id);
-            await fetchTasks();
-            closeDeleteModal();
+            try {
+                await DeleteTask(taskToDelete.id);
+                await fetchTasks();
+            } catch (error) {
+                console.error("Error deleting task:", error);
+            } finally {
+                closeDeleteModal();
+            }
         }
+
     }
     async function fetchTasks() {
-        tasks = await GetAllTasks();
+        try {
+            tasks = await GetAllTasks();
+        } catch (error) {
+            console.error("Error fetching tasks:", error);
+            tasks = [];
+        }
+        console.log("Fetching tasks")
         filterAndSortTasks();
     }
+
+    function formatDeadline(dateString) {
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
 
     function filterAndSortTasks() {
         if (filter === 'all') {
@@ -359,6 +380,19 @@
         color: #888;
         cursor: pointer;
     }
+    .deadline {
+        margin-left: 10px;
+        color: #555;
+        display: flex;
+        align-items: center;
+        font-size: 0.9em;
+    }
+
+    .deadline i {
+        margin-right: 5px;
+        color: #888;
+    }
+
 
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -382,6 +416,7 @@
                 <div class="task-details">
                     <span class="task-title {task.completed ? 'completed' : ''}">{task.title}</span>
                 </div>
+
                 <div class="priority">
                     {#if task.priority === 0}
                         <i class="fas fa-arrow-down text-gray-400"></i>
@@ -391,9 +426,16 @@
                         <i class="fas fa-exclamation-triangle text-yellow-500"></i>
                     {/if}
                 </div>
+
+                <div class="deadline">
+                    <p>deadline:</p>
+                    <i class="fas fa-calendar-alt"></i> {formatDeadline(task.deadline)}
+                </div>
             </div>
+
             <button class="delete-btn" on:click={() => openDeleteModal(task)}>×</button>
         </div>
+
     {/each}
 
     <div class="filter-bar">

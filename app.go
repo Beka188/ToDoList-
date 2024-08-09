@@ -38,23 +38,19 @@ type TaskManager struct {
 //}
 
 func NewTaskManager() *TaskManager {
-	fmt.Println("Opening db 1")
 
 	db, err := sql.Open("sqlite3", "./tasks.db")
 	if err != nil {
 		fmt.Println(err)
 		return nil
 	}
-	fmt.Println("Opening db 2")
 	tm := &TaskManager{
 		db:  db,
 		mu:  sync.Mutex{},
 		ctx: context.Background(),
 	}
-	fmt.Println("Opening db 3")
 
 	_ = tm.createSchema()
-	fmt.Println("Opening db 4")
 
 	return tm
 }
@@ -75,9 +71,7 @@ func (tm *TaskManager) createSchema() error {
         priority INTEGER
     );
     `
-	fmt.Println("Opening db 5")
 	_, err := tm.db.Exec(query)
-	fmt.Println("Opening db 6")
 	return err
 }
 
@@ -100,7 +94,9 @@ func (tm *TaskManager) GetAllTasks() ([]Task, error) {
 		}
 		tasks = append(tasks, task)
 	}
-	fmt.Println(tasks)
+	if len(tasks) == 0 {
+		return nil, fmt.Errorf("no tasks found")
+	}
 	return tasks, nil
 }
 
@@ -120,7 +116,6 @@ func (tm *TaskManager) AddTask(title string, deadline string, priority string) b
 		fmt.Println("Error parsing date:", err)
 		return false
 	}
-	fmt.Printf("%T\n%v", parsedTime, parsedTime)
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
 	query := `INSERT INTO tasks (title, description, completed, created_at, deadline, priority)
@@ -144,7 +139,7 @@ func (tm *TaskManager) DeleteTask(id int) bool {
 		fmt.Println("Error deleting task:", err)
 		return false
 	}
-
+	fmt.Println("Deleted task:", id)
 	return true
 }
 
