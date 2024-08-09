@@ -1,6 +1,9 @@
 <script>
     import { AddTask, GetAllTasks, ToggleTaskCompletion, DeleteTask  } from "../wailsjs/go/main/TaskManager.js";
     import Modal from './Modal.svelte';
+    import DeleteConfirmationModal from './DeleteConfirmationModal.svelte';
+    let isDeleteModalOpen = false;
+    let taskToDelete = null;
 
     let tasks = [];
     let taskTitle = '';
@@ -18,6 +21,7 @@
     async function fetchTasks() {
         tasks = await GetAllTasks();
     }
+
 
     async function addTask() {
         if (taskTitle.trim() !== '') {
@@ -48,11 +52,36 @@
         await fetchTasks();
     }
 
+    function openDeleteModal(task) {
+        taskToDelete = task;
+        isDeleteModalOpen = true;
+    }
+
+    function closeDeleteModal() {
+        isDeleteModalOpen = false;
+        taskToDelete = null;
+    }
+
+    async function confirmDelete() {
+        if (taskToDelete) {
+            await DeleteTask(taskToDelete.id);
+            await fetchTasks();
+            closeDeleteModal();
+        }
+    }
+
     init();
 </script>
 
+<DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        taskTitle={taskToDelete?.title || ''}
+/>
 
-<Modal isOpen={isModalOpen} onClose={closeModal}>
+<Modal
+        isOpen={isModalOpen} onClose={closeModal}>
     <h2>Add New Task</h2>
     <input
             bind:value={taskTitle}
@@ -208,7 +237,7 @@
                 </div>
             </td>
             <td>
-                <button class="delete-btn" on:click={() => deleteTask(task.id)}>
+                <button class="delete-btn" on:click={() => openDeleteModal(task)}>
                     Delete
                 </button>
             </td>
