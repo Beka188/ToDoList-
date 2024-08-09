@@ -5,6 +5,7 @@
     export let taskTitle = '';
 </script>
 
+
 {#if isOpen}
     <div class="modal-overlay">
         <div class="modal-content">
@@ -19,6 +20,7 @@
 {/if}
 
 <style>
+
     .modal-overlay {
         position: fixed;
         top: 0;
