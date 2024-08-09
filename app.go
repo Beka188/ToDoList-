@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"database/sql"
 	"fmt"
-	"os"
-	"sort"
+	_ "github.com/mattn/go-sqlite3"
 	"sync"
 	"time"
 )
@@ -23,48 +22,82 @@ type Task struct {
 }
 
 type TaskManager struct {
-	tasks map[int]Task
-	Next  int `json:"next"`
-	mu    sync.Mutex
-	ctx   context.Context
+	db  *sql.DB
+	mu  sync.Mutex
+	ctx context.Context
 }
 
-type TaskManagerData struct {
-	Next  int
-	Tasks map[int]Task
-}
+//type TaskManagerData struct {
+//	Next  int
+//	Tasks map[int]Task
+//}
+
+//// App struct
+//type App struct {
+//	ctx context.Context
+//}
 
 func NewTaskManager() *TaskManager {
+
+	db, err := sql.Open("sqlite3", "./tasks.db")
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
 	tm := &TaskManager{
-		tasks: make(map[int]Task),
-		Next:  0,
-		mu:    sync.Mutex{},
-		ctx:   context.Background(),
+		db:  db,
+		mu:  sync.Mutex{},
+		ctx: context.Background(),
 	}
 
-	_ = tm.loadTasks()
+	_ = tm.createSchema()
 
 	return tm
-
 }
 
 func (tm *TaskManager) startup(ctx context.Context) {
 	tm.ctx = ctx
 }
 
-func (tm *TaskManager) GetAllTasks() []Task {
-	tasks := make([]Task, len(tm.tasks))
-	idx := 0
-	for _, task := range tm.tasks {
-		tasks[idx] = task
-		idx++
+func (tm *TaskManager) createSchema() error {
+	query := `
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        completed BOOLEAN,
+        created_at DATETIME,
+        deadline DATETIME,
+        priority INTEGER
+    );
+    `
+	_, err := tm.db.Exec(query)
+	return err
+}
+
+func (tm *TaskManager) GetAllTasks() ([]Task, error) {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+
+	rows, err := tm.db.Query(`SELECT id, title, description, completed, created_at, deadline, priority FROM tasks;`)
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
 
-	sort.Slice(tasks, func(i, j int) bool {
-		return tasks[i].CreatedAt.Before(tasks[j].CreatedAt)
-	})
-
-	return tasks
+	var tasks []Task
+	for rows.Next() {
+		var task Task
+		err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Completed, &task.CreatedAt, &task.Deadline, &task.Priority)
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+	}
+	if len(tasks) == 0 {
+		return nil, fmt.Errorf("no tasks found")
+	}
+	return tasks, nil
 }
 
 func (tm *TaskManager) AddTask(title string, deadline string, priority string) bool {
@@ -83,15 +116,16 @@ func (tm *TaskManager) AddTask(title string, deadline string, priority string) b
 		fmt.Println("Error parsing date:", err)
 		return false
 	}
-	fmt.Printf("%T\n%v", parsedTime, parsedTime)
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
-	tm.tasks[tm.Next] = Task{ID: tm.Next, Title: title, CreatedAt: time.Now(), Deadline: parsedTime, Priority: priorityInt}
-	fmt.Println(tm.Next)
-	tm.Next++
-	_ = tm.saveTasks()
-	fmt.Println(tm.GetAllTasks())
-
+	query := `INSERT INTO tasks (title, description, completed, created_at, deadline, priority)
+              VALUES (?, ?, ?, ?, ?, ?);`
+	_, err = tm.db.Exec(query, title, "", false, time.Now(), parsedTime, priorityInt)
+	if err != nil {
+		fmt.Println("Error inserting task:", err)
+		return false
+	}
+	fmt.Println("Added task:", title)
 	return true
 }
 
@@ -99,13 +133,13 @@ func (tm *TaskManager) DeleteTask(id int) bool {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
 
-	_, exists := tm.tasks[id]
-	if !exists {
+	query := `DELETE FROM tasks WHERE id = ?;`
+	_, err := tm.db.Exec(query, id)
+	if err != nil {
+		fmt.Println("Error deleting task:", err)
 		return false
 	}
-
-	delete(tm.tasks, id)
-	_ = tm.saveTasks()
+	fmt.Println("Deleted task:", id)
 	return true
 }
 
@@ -113,49 +147,52 @@ func (tm *TaskManager) ToggleTaskCompletion(taskID int) bool {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
 
-	task, exists := tm.tasks[taskID]
-	if !exists {
+	query := `UPDATE tasks SET completed = NOT completed WHERE id = ?;`
+	_, err := tm.db.Exec(query, taskID)
+	if err != nil {
+		fmt.Println("Error toggling completion:", err)
 		return false
 	}
 
-	task.Completed = !task.Completed
-	tm.tasks[taskID] = task
-	_ = tm.saveTasks()
 	return true
 }
 
-func (tm *TaskManager) saveTasks() error {
-
-	data := TaskManagerData{
-		Next:  tm.Next,
-		Tasks: tm.tasks,
-	}
-
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		fmt.Println("Error marshalling tasks.json")
-		return err
-	}
-
-	return os.WriteFile(taskFile, jsonData, 0644)
+func (tm *TaskManager) Close() error {
+	return tm.db.Close()
 }
 
-func (tm *TaskManager) loadTasks() error {
-	if _, err := os.Stat(taskFile); os.IsNotExist(err) {
-		return nil
-	}
-
-	data, err := os.ReadFile(taskFile)
-	if err != nil {
-		return err
-	}
-
-	var loadedData TaskManagerData
-	if err := json.Unmarshal(data, &loadedData); err != nil {
-		return err
-	}
-
-	tm.Next = loadedData.Next
-	tm.tasks = loadedData.Tasks
-	return nil
-}
+//func (tm *TaskManager) saveTasks() error {
+//
+//	data := TaskManagerData{
+//		Next:  tm.Next,
+//		Tasks: tm.tasks,
+//	}
+//
+//	jsonData, err := json.Marshal(data)
+//	if err != nil {
+//		fmt.Println("Error marshalling tasks.json")
+//		return err
+//	}
+//
+//	return os.WriteFile(taskFile, jsonData, 0644)
+//}
+//
+//func (tm *TaskManager) loadTasks() error {
+//	if _, err := os.Stat(taskFile); os.IsNotExist(err) {
+//		return nil
+//	}
+//
+//	data, err := os.ReadFile(taskFile)
+//	if err != nil {
+//		return err
+//	}
+//
+//	var loadedData TaskManagerData
+//	if err := json.Unmarshal(data, &loadedData); err != nil {
+//		return err
+//	}
+//
+//	tm.Next = loadedData.Next
+//	tm.tasks = loadedData.Tasks
+//	return nil
+//}
