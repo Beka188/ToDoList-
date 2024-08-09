@@ -103,50 +103,5 @@
     }
 </style>
 
-<!--<script>-->
-<!--    export let isOpen = false;-->
-<!--    export let onClose = () => {};-->
-<!--    export let onAdd = () => {};-->
 
-<!--    let title = '';-->
-<!--    let deadline = '';-->
-<!--    let priority = 'medium';-->
 
-<!--    function closeModal() {-->
-<!--        title = '';-->
-<!--        deadline = '';-->
-<!--        priority = 'medium';-->
-<!--        onClose();-->
-<!--    }-->
-
-<!--    function handleAdd() {-->
-<!--        onAdd({ title, deadline, priority });-->
-<!--        closeModal();-->
-<!--    }-->
-<!--</script>-->
-
-<!--{#if isOpen}-->
-<!--    <div class="modal-overlay" on:click={closeModal}>-->
-<!--        <div class="modal-content" on:click|stopPropagation>-->
-<!--            <form>-->
-<!--                <label for="title">Title:</label>-->
-<!--                <input type="text" id="title" bind:value={title} />-->
-
-<!--                <label for="deadline">Deadline:</label>-->
-<!--                <input type="date" id="deadline" bind:value={deadline} />-->
-
-<!--                <label for="priority">Priority:</label>-->
-<!--                <select id="priority" bind:value={priority}>-->
-<!--                    <option value="low">Low</option>-->
-<!--                    <option value="medium">Medium</option>-->
-<!--                    <option value="high">High</option>-->
-<!--                </select>-->
-<!--            </form>-->
-
-<!--            <div class="modal-footer">-->
-<!--                <button class="close-btn" on:click={closeModal}>Close</button>-->
-<!--                <button class="add-btn" on:click={handleAdd}>Add</button>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--{/if}-->

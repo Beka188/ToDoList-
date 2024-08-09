@@ -39,20 +39,10 @@
 
 
     async function addTask({ title, deadline, priority }) {
-        // await DeleteTask(taskToDelete.id);
-        // await fetchTasks();
-        // closeDeleteModal();
         console.log("ADDING NEW TASK");
         if (title.trim() !== '') {
             await AddTask(title, deadline, priority);
             taskTitle = '';
-            // onMount(() => {
-            //     const today = new Date();
-            //     const tomorrow = new Date(today);
-            //     tomorrow.setDate(today.getDate() + 1);
-            //     deadline = tomorrow.toISOString().split('T')[0];
-            // });
-            // priority = 'medium'
             await fetchTasks();
             closeAddTaskModal();
         }
@@ -375,17 +365,7 @@
 
 <div class="app-header">
     <h1 class="app-title">To Do App</h1>
-<!--    <div class="button-group">-->
-<!--        <button class="btn" on:click={() => setSortCriteria('none')}>See All</button>-->
-<!--        <button class="btn" on:click={() => setSortCriteria('priority')}>Sort by Priority</button>-->
-<!--        <button class="btn" on:click={() => setSortCriteria('deadline')}>Sort by Deadline</button>-->
-<!--        <button class="btn" on:click={toggleShowCompleted}>-->
-<!--            {showCompleted ? 'Hide Completed' : 'Show Completed'}-->
-<!--        </button>-->
-<!--    <button class="delete-btn" on:click={() => openDeleteModal(task)}>×</button>-->
-
     <button class="btn add-task-btn" on:click={ openAddTaskModal}>Add Task</button>
-<!--    </div>-->
 </div>
 
 <div class="task-container">
@@ -412,8 +392,6 @@
                     {/if}
                 </div>
             </div>
-
-<!--            <span class="task-title {task.completed ? 'completed' : ''}">{task.title}</span>-->
             <button class="delete-btn" on:click={() => openDeleteModal(task)}>×</button>
         </div>
     {/each}
@@ -425,6 +403,5 @@
             <button class="filter-btn {filter === 'active' ? 'active' : ''}" on:click={() => setFilter('active')}>Active</button>
             <button class="filter-btn {filter === 'completed' ? 'active' : ''}" on:click={() => setFilter('completed')}>Completed</button>
         </div>
-<!--        <button class="clear-completed" on:click={clearCompleted}>Clear Completed</button>-->
     </div>
 </div>

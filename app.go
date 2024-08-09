@@ -60,10 +60,6 @@ func NewTaskManager() *TaskManager {
 }
 
 func (tm *TaskManager) startup(ctx context.Context) {
-	//err := tm.createSchema()
-	//if err != nil {
-	//	return
-	//}
 	tm.ctx = ctx
 }
 
